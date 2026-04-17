@@ -9,26 +9,39 @@ logger = logging.getLogger(__name__)
 
 
 class BrowserChecker:
-    def __init__(self, headless: bool = True, timeout: int = 60, proxy: Optional[str] = None):
+    def __init__(self, headless: bool = True, timeout: int = 90, proxy: Optional[str] = None):
         self.headless = headless
         self.timeout = timeout
         self.proxy = proxy
 
-    async def _init_browser(self):
-        playwright = await async_playwright().start()
-        browser = await playwright.chromium.launch(
-            headless=self.headless,
-            proxy={"server": self.proxy} if self.proxy else None,
-            args=['--disable-blink-features=AutomationControlled']
-        )
-        context = await browser.new_context(
-            viewport={'width': 1920, 'height': 1080},
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        )
-        page = await context.new_page()
-        return playwright, browser, page
+  async def _init_browser(self):
+    playwright = await async_playwright().start()
+    browser = await playwright.chromium.launch(
+        headless=self.headless,
+        proxy={"server": self.proxy} if self.proxy else None,
+        args=[
+            '--disable-blink-features=AutomationControlled',
+            '--disable-dev-shm-usage',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process'
+        ]
+    )
+    context = await browser.new_context(
+        viewport={'width': 1920, 'height': 1080},
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    )
+    # Add stealth script to hide automation
+    await context.add_init_script("""
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined
+        });
+    """)
+    page = await context.new_page()
+    return playwright, browser, page
 
-    # ============ CRUNCHYROLL (FIXED INDENTATION) ============
+    # ============ CRUNCHYROLL ============
     async def check_crunchyroll(self, email: str, password: str) -> Tuple[bool, str]:
         playwright, browser, page = await self._init_browser()
         try:
