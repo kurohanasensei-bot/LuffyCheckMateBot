@@ -920,6 +920,56 @@ Commands:
 """
     await edit_menu_message(query, admin_text, build_nav_keyboard())
 
+# ========== DEBUG COMMANDS ==========
+async def debug_browser(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🌐 Testing browser launch...")
+    try:
+        from playwright.async_api import async_playwright
+        playwright = await async_playwright().start()
+        browser = await playwright.chromium.launch(headless=True)
+        page = await browser.new_page()
+        await page.goto("https://www.google.com")
+        title = await page.title()
+        await browser.close()
+        await playwright.stop()
+        await update.message.reply_text(f"✅ BROWSER WORKS! Loaded: {title}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ BROWSER FAILED: {str(e)[:200]}")
+
+async def debug_spotify(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🎵 Testing Spotify login...")
+    try:
+        from checkers.browser_checkers import BrowserChecker
+        checker = BrowserChecker(headless=True, timeout=90)
+        success, message = await checker.check_spotify("test@test.com", "test123")
+        await update.message.reply_text(f"Result: {success}\nMessage: {message[:200]}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ ERROR: {str(e)[:200]}")
+
+async def debug_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🔍 Testing ALL services... This takes 2-3 minutes.")
+    results = []
+    test_services = ["spotify", "netflix", "crunchyroll", "tubi", "disney", "hbomax", "prime", "hulu"]
+    from checkers.browser_checkers import BrowserChecker
+    checker = BrowserChecker(headless=True, timeout=90)
+    for service in test_services:
+        try:
+            checker_func = getattr(checker, f"check_{service}", None)
+            if checker_func:
+                import time
+                start = time.time()
+                success, message = await checker_func("test@test.com", "test123")
+                elapsed = time.time() - start
+                status = "✅" if success else "❌"
+                results.append(f"{status} {service}: {message[:40]} ({elapsed:.1f}s)")
+            else:
+                results.append(f"⚠️ {service}: No checker found")
+        except Exception as e:
+            results.append(f"💥 {service}: {str(e)[:40]}")
+    summary = "🔍 DEBUG RESULTS\n━━━━━━━━━━━━━━━━\n\n" + "\n".join(results)
+    await update.message.reply_text(summary[:4000])
+# ========== END DEBUG COMMANDS ==========
+
 # Main bot setup
 async def shutdown(signal, loop):
     """Cleanup tasks"""
@@ -966,6 +1016,11 @@ def run_bot():
     application.add_handler(CommandHandler("set_proxy", set_proxy))
     application.add_handler(CommandHandler("set_timeout", set_timeout))
     application.add_handler(CommandHandler("toggle_headless", toggle_headless))
+    
+    # DEBUG commands
+    application.add_handler(CommandHandler("browsertest", debug_browser))
+    application.add_handler(CommandHandler("debugspotify", debug_spotify))
+    application.add_handler(CommandHandler("debugall", debug_all))
     
     # Callback handlers
     application.add_handler(CallbackQueryHandler(admin_panel_button, pattern="^admin_panel$"))
