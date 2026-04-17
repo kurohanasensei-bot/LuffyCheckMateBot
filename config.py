@@ -178,6 +178,6 @@ SERVICES = {
 }
 
 # Checker settings
-TIMEOUT_DEFAULT = 90  # Was 15 or 45
+TIMEOUT_DEFAULT = 120  # Was 15, 45, or 90
 MAX_CONCURRENT = 3
 MAX_RETRIES = 2
