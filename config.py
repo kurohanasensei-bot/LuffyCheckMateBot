@@ -19,165 +19,35 @@ PLANS = {
 
 # Services list with URLs and selectors
 SERVICES = {
-    "netflix": {
-        "name": "Netflix",
-        "icon": "🎬",
-        "login_url": "https://www.netflix.com/login",
-        "account_url": "https://www.netflix.com/AccountDetails"
-    },
-    "disney": {
-        "name": "Disney+",
-        "icon": "🐭",
-        "login_url": "https://www.disneyplus.com/login",
-        "account_url": "https://www.disneyplus.com/account"
-    },
-    "hbomax": {
-        "name": "HBO Max",
-        "icon": "🎞️",
-        "login_url": "https://www.max.com/login",
-        "account_url": "https://www.max.com/account"
-    },
-    "prime": {
-        "name": "Prime Video",
-        "icon": "📦",
-        "login_url": "https://www.primevideo.com/auth/ref=nav_ham_signin",
-        "account_url": "https://www.amazon.com/gp/css/account/view.html"
-    },
-    "hulu": {
-        "name": "Hulu",
-        "icon": "📺",
-        "login_url": "https://www.hulu.com/login",
-        "account_url": "https://www.hulu.com/account"
-    },
-    "crunchyroll": {
-        "name": "Crunchyroll",
-        "icon": "🍣",
-        "login_url": "https://www.crunchyroll.com/login",
-        "account_url": "https://www.crunchyroll.com/premium"
-    },
-    "paramount": {
-        "name": "Paramount+",
-        "icon": "🎯",
-        "login_url": "https://www.paramountplus.com/login/",
-        "account_url": "https://www.paramountplus.com/account/"
-    },
-    "peacock": {
-        "name": "Peacock",
-        "icon": "🦚",
-        "login_url": "https://www.peacocktv.com/signin",
-        "account_url": "https://www.peacocktv.com/account"
-    },
-    "plex": {
-        "name": "Plex",
-        "icon": "🎬",
-        "login_url": "https://app.plex.tv/auth/#!",
-        "account_url": "https://app.plex.tv/desktop/#!/settings/account"
-    },
-    "starz": {
-        "name": "Starz",
-        "icon": "⭐",
-        "login_url": "https://www.starz.com/login",
-        "account_url": "https://www.starz.com/account"
-    },
-    "mgm": {
-        "name": "MGM+",
-        "icon": "🎪",
-        "login_url": "https://www.mgmplus.com/login",
-        "account_url": "https://www.mgmplus.com/account"
-    },
-    "discovery": {
-        "name": "Discovery+",
-        "icon": "📡",
-        "login_url": "https://www.discoveryplus.com/login",
-        "account_url": "https://www.discoveryplus.com/account"
-    },
-    "espn": {
-        "name": "ESPN+",
-        "icon": "⚽",
-        "login_url": "https://www.espn.com/login",
-        "account_url": "https://www.espn.com/plus/account"
-    },
-    "tubi": {
-        "name": "Tubi",
-        "icon": "🟢",
-        "login_url": "https://tubitv.com/signin",
-        "account_url": "https://tubitv.com/account"
-    },
-    "pluto": {
-        "name": "Pluto TV",
-        "icon": "📡",
-        "login_url": "https://pluto.tv/login",
-        "account_url": "https://pluto.tv/account"
-    },
-    "spotify": {
-        "name": "Spotify",
-        "icon": "🎵",
-        "login_url": "https://accounts.spotify.com/en/login",
-        "account_url": "https://www.spotify.com/account/overview/"
-    },
-    "youtube_music": {
-        "name": "YouTube Music",
-        "icon": "🎧",
-        "login_url": "https://music.youtube.com/",
-        "account_url": "https://www.youtube.com/paid_memberships"
-    },
-    "amazon_music": {
-        "name": "Amazon Music",
-        "icon": "🎵",
-        "login_url": "https://www.amazon.com/music/player",
-        "account_url": "https://www.amazon.com/gp/yourmemberships"
-    },
-    "chatgpt": {
-        "name": "ChatGPT",
-        "icon": "🤖",
-        "login_url": "https://chat.openai.com/auth/login",
-        "account_url": "https://chat.openai.com/account"
-    },
-    "claude": {
-        "name": "Claude AI",
-        "icon": "🧠",
-        "login_url": "https://claude.ai/login",
-        "account_url": "https://claude.ai/account"
-    },
-    "perplexity": {
-        "name": "Perplexity",
-        "icon": "🔍",
-        "login_url": "https://www.perplexity.ai/login",
-        "account_url": "https://www.perplexity.ai/account"
-    },
-    "cursor": {
-        "name": "Cursor",
-        "icon": "⚡",
-        "login_url": "https://cursor.sh/login",
-        "account_url": "https://cursor.sh/account"
-    },
-    "surfshark": {
-        "name": "Surfshark",
-        "icon": "🦈",
-        "login_url": "https://account.surfshark.com/login",
-        "account_url": "https://account.surfshark.com/subscription"
-    },
-    "nordvpn": {
-        "name": "NordVPN",
-        "icon": "🛡️",
-        "login_url": "https://my.nordaccount.com/login/",
-        "account_url": "https://my.nordaccount.com/account/dashboard/"
-    },
-    "expressvpn": {
-        "name": "ExpressVPN",
-        "icon": "🔒",
-        "login_url": "https://www.expressvpn.com/login",
-        "account_url": "https://www.expressvpn.com/account"
-    },
-    "canva": {
-        "name": "Canva Pro",
-        "icon": "🎨",
-        "login_url": "https://www.canva.com/login",
-        "account_url": "https://www.canva.com/account"
-    }
+    "netflix": {"name": "Netflix", "icon": "🎬", "login_url": "https://www.netflix.com/login"},
+    "disney": {"name": "Disney+", "icon": "🐭", "login_url": "https://www.disneyplus.com/login"},
+    "hbomax": {"name": "HBO Max", "icon": "🎞️", "login_url": "https://www.max.com/login"},
+    "prime": {"name": "Prime Video", "icon": "📦", "login_url": "https://www.amazon.com/ap/signin"},
+    "hulu": {"name": "Hulu", "icon": "📺", "login_url": "https://www.hulu.com/login"},
+    "crunchyroll": {"name": "Crunchyroll", "icon": "🍣", "login_url": "https://www.crunchyroll.com/login"},
+    "paramount": {"name": "Paramount+", "icon": "🎯", "login_url": "https://www.paramountplus.com/login/"},
+    "peacock": {"name": "Peacock", "icon": "🦚", "login_url": "https://www.peacocktv.com/signin"},
+    "plex": {"name": "Plex", "icon": "🎬", "login_url": "https://app.plex.tv/auth/#!"},
+    "starz": {"name": "Starz", "icon": "⭐", "login_url": "https://www.starz.com/login"},
+    "mgm": {"name": "MGM+", "icon": "🎪", "login_url": "https://www.mgmplus.com/login"},
+    "discovery": {"name": "Discovery+", "icon": "📡", "login_url": "https://www.discoveryplus.com/login"},
+    "espn": {"name": "ESPN+", "icon": "⚽", "login_url": "https://www.espn.com/login"},
+    "tubi": {"name": "Tubi", "icon": "🟢", "login_url": "https://tubitv.com/signin"},
+    "pluto": {"name": "Pluto TV", "icon": "📡", "login_url": "https://pluto.tv/login"},
+    "spotify": {"name": "Spotify", "icon": "🎵", "login_url": "https://accounts.spotify.com/en/login"},
+    "youtube_music": {"name": "YouTube Music", "icon": "🎧", "login_url": "https://music.youtube.com/"},
+    "amazon_music": {"name": "Amazon Music", "icon": "🎵", "login_url": "https://www.amazon.com/music/player"},
+    "chatgpt": {"name": "ChatGPT", "icon": "🤖", "login_url": "https://chat.openai.com/auth/login"},
+    "claude": {"name": "Claude AI", "icon": "🧠", "login_url": "https://claude.ai/login"},
+    "perplexity": {"name": "Perplexity", "icon": "🔍", "login_url": "https://www.perplexity.ai/login"},
+    "cursor": {"name": "Cursor", "icon": "⚡", "login_url": "https://cursor.sh/login"},
+    "surfshark": {"name": "Surfshark", "icon": "🦈", "login_url": "https://account.surfshark.com/login"},
+    "nordvpn": {"name": "NordVPN", "icon": "🛡️", "login_url": "https://my.nordaccount.com/login/"},
+    "expressvpn": {"name": "ExpressVPN", "icon": "🔒", "login_url": "https://www.expressvpn.com/login"},
+    "canva": {"name": "Canva Pro", "icon": "🎨", "login_url": "https://www.canva.com/login"}
 }
 
 # Checker settings
-TIMEOUT_DEFAULT = 120  # Was 15, 45, or 90
-MAX_CONCURRENT = 3
+TIMEOUT_DEFAULT = 120  # <--- CHANGED FROM 15/45/90 TO 120
+MAX_CONCURRENT = 2  # Reduced from 3 to avoid overload
 MAX_RETRIES = 2
