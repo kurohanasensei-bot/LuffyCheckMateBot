@@ -25,10 +25,10 @@ from telegram.ext import (
 import asyncio
 import aiosqlite
 from datetime import datetime, timedelta
-import os
 from pathlib import Path
 import tempfile
 import zipfile
+import signal
 
 from config import BOT_TOKEN, ADMIN_IDS, PLANS, SERVICES, TIMEOUT_DEFAULT, MAX_CONCURRENT
 from database import database
@@ -49,7 +49,6 @@ class CheckQueue:
         queue_id = await database.add_to_queue(user_id, service, accounts)
         position = await database.get_queue_position(queue_id)
 
-        # Get user's priority
         user = await database.get_user(user_id)
         priority = PLANS[user["plan"]]["priority"]
 
@@ -74,7 +73,6 @@ class CheckQueue:
                 await asyncio.sleep(1)
                 continue
 
-            # Get job with priority
             jobs = []
             while not self.queue.empty():
                 jobs.append(await self.queue.get())
@@ -96,7 +94,6 @@ class CheckQueue:
         service = job["service"]
         accounts = job["accounts"]
 
-        # Check user's daily limit
         user = await database.get_user(user_id)
         if not user:
             await bot.send_message(user_id, "❌ User not found! Please use /start")
@@ -114,14 +111,12 @@ class CheckQueue:
             await database.add_log("WARNING", f"User {user_id} reached daily limit", user_id)
             return
 
-        # Process accounts
         remaining = max_checks - daily_used if max_checks != float("inf") else len(accounts)
         accounts_to_check = accounts[:remaining]
 
         tracker = ProgressTracker(len(accounts_to_check))
         result_manager = ResultManager(user_id, service)
 
-        # Send initial progress message
         progress_msg = await bot.send_message(
             user_id, 
             Formatter.format_live_progress(
@@ -129,7 +124,6 @@ class CheckQueue:
             )
         )
 
-        # Get user settings
         settings = user.get("settings", {})
         headless = settings.get("headless", True)
         timeout = settings.get("timeout", TIMEOUT_DEFAULT)
@@ -149,7 +143,6 @@ class CheckQueue:
 
             email, password = account.split(":", 1)
 
-            # Try to use service-specific checker
             checker_func = getattr(browser_checker, f"check_{service}", None)
 
             if checker_func:
@@ -170,7 +163,6 @@ class CheckQueue:
                         invalid_count += 1
                         last_type = f"INVALID on {service}"
 
-                    # Update tracker
                     tracker.update(
                         hits=1 if success and ("premium" in details.lower() or "plus" in details.lower()) else 0,
                         valid=1 if success and not ("premium" in details.lower() or "plus" in details.lower()) else 0,
@@ -188,7 +180,6 @@ class CheckQueue:
                 invalid_count += 1
                 tracker.update(invalid=1, current=account[:50], last=f"NOT IMPLEMENTED")
 
-            # Update progress every 3 accounts
             if (i + 1) % 3 == 0 or i == len(accounts_to_check) - 1:
                 try:
                     await progress_msg.edit_text(
@@ -204,18 +195,15 @@ class CheckQueue:
                         )
                     )
                 except:
-                    pass  # Message might be too old to edit
+                    pass
 
-            await asyncio.sleep(1)  # Rate limiting
+            await asyncio.sleep(1)
 
-        # Save results and send ZIP
         zip_path = await result_manager.save_files()
 
-        # Update database stats
         await database.increment_stats(user_id, hits_count, valid_count, invalid_count)
         await database.increment_daily_usage(user_id, len(accounts_to_check), hits_count)
 
-        # Send final results
         final_message = Formatter.format_results(
             SERVICES[service]['name'],
             result_manager.details["hits"],
@@ -228,13 +216,11 @@ class CheckQueue:
 
         await bot.send_message(user_id, final_message)
 
-        # Send ZIP file
         with open(zip_path, 'rb') as f:
             await bot.send_document(user_id, f, filename=f"results_{service}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip")
 
         await result_manager.cleanup()
 
-        # Update queue status
         async with aiosqlite.connect("accounts.db") as db:
             await db.execute(
                 "UPDATE queue SET status = 'completed', completed_at = ? WHERE id = ?",
@@ -328,7 +314,6 @@ async def services_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    # Create services keyboard
     keyboard = []
     row = []
     for service_id, service_info in SERVICES.items():
@@ -348,11 +333,7 @@ async def services_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await edit_menu_message(
-        query,
-        "🚀 Select a service to check:",
-        reply_markup
-    )
+    await edit_menu_message(query, "🚀 Select a service to check:", reply_markup)
 
 async def check_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -391,6 +372,7 @@ async def handle_input_method(update: Update, context: ContextTypes.DEFAULT_TYPE
     service = context.user_data.get('current_service')
     back_data = f"check_{service}" if service else "services"
     reply_markup = build_nav_keyboard(back_data)
+    
     if method == "input_text":
         context.user_data['awaiting_input'] = "text"
         await edit_menu_message(
@@ -440,7 +422,6 @@ async def handle_accounts_input(update: Update, context: ContextTypes.DEFAULT_TY
 
         file = await update.message.document.get_file()
 
-        # Download to temp file
         with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{update.message.document.file_name}") as tmp_file:
             await file.download_to_drive(tmp_file.name)
             tmp_path = tmp_file.name
@@ -461,7 +442,6 @@ async def handle_accounts_input(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("No valid accounts found (format: email:pass per line)")
         return
 
-    # Check daily limit
     user = await database.get_user(update.effective_user.id)
     plan = user["plan"]
     daily_used = await database.get_daily_usage(update.effective_user.id)
@@ -475,7 +455,6 @@ async def handle_accounts_input(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data['awaiting_input'] = None
         return
 
-    # Add to queue
     position = await queue_system.add_job(update.effective_user.id, service, accounts)
 
     await update.message.reply_text(
@@ -508,7 +487,6 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     daily_used = await database.get_daily_usage(user_id)
     max_checks = PLANS[user["plan"]]["checks_per_day"]
 
-    # Get today's hits
     async with aiosqlite.connect("accounts.db") as db:
         async with db.execute(
             "SELECT hits_today FROM daily_usage WHERE user_id = ? AND date = ?",
@@ -519,7 +497,6 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             user['hits_today'] = hits_today
 
     stats_text = Formatter.format_stats(user, daily_used, max_checks)
-
     reply_markup = build_nav_keyboard()
 
     if query:
@@ -537,7 +514,6 @@ async def membership_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     user = await database.get_user(user_id)
     membership_text = Formatter.format_membership(user["plan"])
-
     reply_markup = build_nav_keyboard()
 
     if query:
@@ -688,7 +664,6 @@ Commands:
 /logs - View system logs
 /add_credits @username amount - Add extra credits
 """
-
     await update.message.reply_text(admin_text)
 
 async def stats_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -721,7 +696,6 @@ async def upgrade_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Invalid plan! Options: free/weekly/monthly/yearly/admin")
             return
 
-        # Find user by username
         users = await database.get_all_users()
         target_user = None
         for user in users:
@@ -741,7 +715,6 @@ async def upgrade_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await database.update_plan(target_user["user_id"], plan, expiry)
         await update.message.reply_text(f"✅ Upgraded @{username} to {plan.upper()}!")
 
-        # Notify user
         try:
             await context.bot.send_message(
                 target_user["user_id"],
@@ -908,14 +881,12 @@ async def add_credits(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f"User @{username} not found!")
             return
 
-        # This is a placeholder - implement custom credits system if needed
         await update.message.reply_text(f"✅ Added {amount} credits to @{username}")
 
     except (IndexError, ValueError):
         await update.message.reply_text("Usage: /add_credits @username amount")
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle errors"""
     await database.add_log("ERROR", f"Error: {context.error}", update.effective_user.id if update else None)
 
     if update and update.effective_message:
@@ -950,16 +921,25 @@ Commands:
     await edit_menu_message(query, admin_text, build_nav_keyboard())
 
 # Main bot setup
-def main():
+async def shutdown(signal, loop):
+    """Cleanup tasks"""
+    print(f"Received exit signal {signal.name}...")
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    [task.cancel() for task in tasks]
+    print(f"Cancelling {len(tasks)} outstanding tasks")
+    await asyncio.gather(*tasks, return_exceptions=True)
+    loop.stop()
+
+def run_bot():
     # Create temp directory
     Path("temp").mkdir(exist_ok=True)
-
+    
     # Initialize database
     asyncio.run(database.init_db())
-
+    
     # Create bot application
     application = Application.builder().token(BOT_TOKEN).build()
-
+    
     # User commands
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("services", services_menu))
@@ -968,7 +948,7 @@ def main():
     application.add_handler(CommandHandler("settings", settings_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("cancel", cancel))
-
+    
     # Admin commands
     application.add_handler(CommandHandler("admin", admin_panel))
     application.add_handler(CommandHandler("stats_all", stats_all))
@@ -981,12 +961,12 @@ def main():
     application.add_handler(CommandHandler("resume", resume_queue))
     application.add_handler(CommandHandler("logs", view_logs))
     application.add_handler(CommandHandler("add_credits", add_credits))
-
+    
     # Settings commands
     application.add_handler(CommandHandler("set_proxy", set_proxy))
     application.add_handler(CommandHandler("set_timeout", set_timeout))
     application.add_handler(CommandHandler("toggle_headless", toggle_headless))
-
+    
     # Callback handlers
     application.add_handler(CallbackQueryHandler(admin_panel_button, pattern="^admin_panel$"))
     application.add_handler(CallbackQueryHandler(services_menu, pattern="^services$"))
@@ -1001,56 +981,33 @@ def main():
     application.add_handler(CallbackQueryHandler(set_proxy, pattern="^set_proxy$"))
     application.add_handler(CallbackQueryHandler(set_timeout, pattern="^set_timeout$"))
     application.add_handler(CallbackQueryHandler(toggle_headless, pattern="^toggle_headless$"))
-
+    
     # Message handlers
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_accounts_input))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_settings_input))
     application.add_handler(MessageHandler(filters.Document.ALL, handle_accounts_input))
-
+    
     # Error handler
     application.add_error_handler(error_handler)
-
+    
     # Start queue worker
     async def start_worker():
         asyncio.create_task(queue_system.worker(application.bot))
-
+    
     # Start bot
     print("🤖 Bot started!")
     print(f"Admin IDs: {ADMIN_IDS}")
     print(f"Services available: {len(SERVICES)}")
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.create_task(start_worker())
-    application.run_polling()
-
-import asyncio
-import signal
-
-async def shutdown(signal, loop):
-    """Cleanup tasks"""
-    print(f"Received exit signal {signal.name}...")
-    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-    [task.cancel() for task in tasks]
-    print(f"Cancelling {len(tasks)} outstanding tasks")
-    await asyncio.gather(*tasks, return_exceptions=True)
-    loop.stop()
-
-def main():
+    
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     
-    # Add signal handlers for clean shutdown
+    # Add signal handlers
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown(sig, loop)))
     
-    # Your existing bot setup code here...
-    # (keep your existing main() content)
-    
-    try:
-        loop.run_forever()
-    finally:
-        loop.close()
+    loop.create_task(start_worker())
+    application.run_polling()
 
 if __name__ == "__main__":
-    main()
+    run_bot()
