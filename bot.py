@@ -15,6 +15,10 @@ def run_web():
 
 threading.Thread(target=run_web, daemon=True).start()
 
+@app.route('/health')
+def health():
+    return "OK", 200
+    
 # bot.py
 from typing import List, Dict, Optional
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
