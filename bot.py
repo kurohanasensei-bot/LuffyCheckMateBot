@@ -1024,5 +1024,33 @@ def main():
     loop.create_task(start_worker())
     application.run_polling()
 
+import asyncio
+import signal
+
+async def shutdown(signal, loop):
+    """Cleanup tasks"""
+    print(f"Received exit signal {signal.name}...")
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    [task.cancel() for task in tasks]
+    print(f"Cancelling {len(tasks)} outstanding tasks")
+    await asyncio.gather(*tasks, return_exceptions=True)
+    loop.stop()
+
+def main():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    # Add signal handlers for clean shutdown
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown(sig, loop)))
+    
+    # Your existing bot setup code here...
+    # (keep your existing main() content)
+    
+    try:
+        loop.run_forever()
+    finally:
+        loop.close()
+
 if __name__ == "__main__":
     main()
