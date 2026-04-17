@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class BrowserChecker:
-    def __init__(self, headless: bool = True, timeout: int = 90, proxy: Optional[str] = None):
+    def __init__(self, headless: bool = True, timeout: int = 120, proxy: Optional[str] = None):
         self.headless = headless
         self.timeout = timeout
         self.proxy = proxy
